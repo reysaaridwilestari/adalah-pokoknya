@@ -3,21 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Happy New Year 2026</title>
+    <title>adalah pokoknya</title>
     <style>
         body {
             margin: 0;
             background: #000;
             overflow: hidden;
-            /* Menggunakan dvh agar tidak terpotong address bar di HP */
-            height: 100dvh; 
-            width: 100vw;
             display: flex;
             justify-content: center;
             align-items: center;
+            min-height: 100vh;
             font-family: 'Arial Black', sans-serif;
             touch-action: none;
-            position: fixed; /* Mencegah scrolling */
         }
         canvas {
             display: block;
@@ -25,27 +22,52 @@
             top: 0;
             left: 0;
         }
+
+        /* --- BLOK PESAN YANG DIPERBESAR --- */
         #intro-message {
             position: relative;
             z-index: 10;
             text-align: center;
-            padding: 30px;
+            /* Padding ekstra besar untuk blok yang masif */
+            padding: 80px 40px; 
             background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            border: 3px solid white;
-            border-radius: 20px;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 8px solid white; /* Garis pinggir sangat tebal */
+            border-radius: 50px;
             cursor: pointer;
             color: white;
-            width: 80%;
-            max-width: 400px;
-            box-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
-            transition: transform 0.2s;
+            width: 90%; 
+            max-width: 800px; /* Lebar maksimal diperluas */
+            box-shadow: 0 0 50px rgba(255, 255, 255, 0.4);
+            transition: all 0.2s ease-in-out;
+            user-select: none;
         }
+
+        #intro-message:hover {
+            background: rgba(255, 255, 255, 0.2);
+            box-shadow: 0 0 80px rgba(255, 255, 255, 0.6);
+        }
+
         #intro-message:active {
-            transform: scale(0.95);
+            transform: scale(0.9); /* Efek membal saat diklik */
         }
-        h1 { font-size: 1.8rem; margin: 0; }
-        p { font-size: 1.2rem; margin-top: 10px; color: #ffeb3b; }
+
+        h1 { 
+            font-size: clamp(2.5rem, 8vw, 5rem); /* Ukuran teks adaptif tapi besar */
+            margin: 0; 
+            letter-spacing: 5px;
+            line-height: 1.2;
+            text-shadow: 2px 2px 10px rgba(0,0,0,0.5);
+        }
+
+        p { 
+            font-size: clamp(1.2rem, 4vw, 2.5rem); 
+            margin-top: 25px;
+            font-weight: bold;
+            color: #ffeb3b; /* Kuning terang agar sangat terlihat */
+            text-transform: uppercase;
+        }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.3/howler.min.js"></script>
 </head>
@@ -54,27 +76,22 @@
 <canvas id="fireworks"></canvas>
 
 <div id="intro-message">
-    <h1>CIIIIHHHHUUUUUYYYYY</h1>
-    <p>KLIKKKKK BROOOOOOO</p>
+    <h1>CIIIHHHUUUYYY</h1>
+    <p>KLIKKKKK BROOOOOOOOOOOOOO</p>
 </div>
 
 <script>
     const canvas = document.getElementById('fireworks');
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
     const introMessage = document.getElementById('intro-message');
 
     let soundEnabled = false;
-    let particles = [];
-    const countdownSteps = ["3", "2", "1", "HAPPY NEW YEAR 2026"];
-    let stepIndex = 0;
-    let autoMode = false;
-
+    
     function resize() {
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
     }
     window.addEventListener('resize', resize);
-    window.addEventListener('orientationchange', () => setTimeout(resize, 200));
     resize();
 
     const fireworkSound = new Howl({
@@ -97,6 +114,8 @@
                 this.targetY = targetY;
                 this.hasTarget = true;
                 this.ease = 0.08;
+                this.vx = 0;
+                this.vy = 0;
             } else {
                 const angle = Math.random() * Math.PI * 2;
                 const speed = Math.random() * 8 + 2;
@@ -110,7 +129,7 @@
             ctx.fillStyle = this.color;
             ctx.globalAlpha = this.alpha;
             ctx.beginPath();
-            ctx.arc(this.x, this.y, 1.2, 0, Math.PI * 2);
+            ctx.arc(this.x, this.y, 2, 0, Math.PI * 2); // Partikel sedikit lebih besar
             ctx.fill();
         }
 
@@ -118,7 +137,7 @@
             if (this.hasTarget) {
                 this.x += (this.targetX - this.x) * this.ease;
                 this.y += (this.targetY - this.y) * this.ease;
-                this.alpha -= 0.005; 
+                this.alpha -= 0.003; 
             } else {
                 this.vx *= this.friction;
                 this.vy *= this.friction;
@@ -130,15 +149,25 @@
         }
     }
 
+    let particles = [];
+    const countdownSteps = ["3", "2", "1", "HAPPY NEW YEAR 2026"];
+    let stepIndex = 0;
+    let autoMode = false;
+
     function getPoints(text) {
         const tempCanvas = document.createElement('canvas');
         const tempCtx = tempCanvas.getContext('2d');
         tempCanvas.width = canvas.width;
         tempCanvas.height = canvas.height;
         
-        // Responsif font size: teks panjang akan lebih kecil agar tidak terpotong
-        let fontSize = text.length > 5 ? canvas.width * 0.1 : canvas.width * 0.5;
-        const maxFontSize = text.length > 5 ? 80 : 300;
+        let fontSize;
+        if (text.length > 5) {
+            fontSize = canvas.width * 0.12; 
+        } else {
+            fontSize = canvas.width * 0.4;  
+        }
+
+        const maxFontSize = text.length > 5 ? 140 : 500;
         if (fontSize > maxFontSize) fontSize = maxFontSize;
 
         tempCtx.font = `bold ${fontSize}px Arial`;
@@ -148,7 +177,7 @@
 
         const imgData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height).data;
         const points = [];
-        const gap = canvas.width < 600 ? 6 : 4; // Lebih renggang di HP agar ringan
+        const gap = window.innerWidth < 600 ? 6 : 4;
 
         for (let y = 0; y < tempCanvas.height; y += gap) {
             for (let x = 0; x < tempCanvas.width; x += gap) {
@@ -162,8 +191,9 @@
 
     function createFirework(text = null) {
         if (text) particles = []; 
+        
         if (soundEnabled) fireworkSound.play();
-        const color = `hsl(${Math.random() * 360}, 100%, 75%)`;
+        const color = `hsl(${Math.random() * 360}, 100%, 70%)`;
         
         if (text) {
             const points = getPoints(text);
@@ -172,8 +202,8 @@
             });
         } else {
             const x = Math.random() * canvas.width;
-            const y = Math.random() * (canvas.height * 0.6);
-            for (let i = 0; i < 40; i++) {
+            const y = Math.random() * canvas.height * 0.5;
+            for (let i = 0; i < 60; i++) {
                 particles.push(new Particle(x, y, color));
             }
         }
@@ -183,14 +213,14 @@
         if (stepIndex < countdownSteps.length) {
             createFirework(countdownSteps[stepIndex]);
             stepIndex++;
-            setTimeout(startSequence, 2500); 
+            setTimeout(startSequence, 2000); 
         } else {
             autoMode = true; 
         }
     }
 
     function animate() {
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.2)'; // Jejak kembang api lebih halus
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
         for (let i = particles.length - 1; i >= 0; i--) {
@@ -199,7 +229,7 @@
             if (particles[i].alpha <= 0) particles.splice(i, 1);
         }
 
-        if (autoMode && Math.random() < 0.05) {
+        if (autoMode && Math.random() < 0.06) {
             createFirework();
         }
         requestAnimationFrame(animate);
